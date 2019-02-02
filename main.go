@@ -33,7 +33,7 @@ func main() {
 	}
 
 	go sendHelp()
-	ticker := time.NewTicker(time.Duration(configuration.Minutes) * time.Second)
+	ticker := time.NewTicker(time.Duration(configuration.Minutes) * time.Minute)
 	go func() {
 		for range ticker.C {
 			received <- 0
@@ -71,11 +71,11 @@ func sendHelp() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path[1:] == configuration.Password {
 		fmt.Println("correct password")
-		w.Write([]byte("good job"))
+		w.Write([]byte("reset timer."))
 		received <- 1
 		return
 	}
-	w.Write([]byte("tf u doin here"))
+	w.Write([]byte("You're not supposed to be here."))
 }
 
 func loadConfig() {
