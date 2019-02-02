@@ -24,7 +24,13 @@ var bot *tgbotapi.BotAPI
 var configuration = Configuration{}
 
 func main() {
-	loadConfig()
+	var path string
+	if len(os.Args) > 1 {
+		path = os.Args[1]
+	} else {
+		path = "conf.json"
+	}
+	loadConfig(path)
 
 	var err error
 	bot, err = tgbotapi.NewBotAPI(configuration.BotToken)
@@ -75,8 +81,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You're not supposed to be here."))
 }
 
-func loadConfig() {
-	file, _ := os.Open("conf.json")
+func loadConfig(path string) {
+	file, _ := os.Open(path)
 	decoder := json.NewDecoder(file)
 	err := decoder.Decode(&configuration)
 	if err != nil {
