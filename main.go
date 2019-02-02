@@ -58,9 +58,6 @@ func sendHelp() {
 		fmt.Println("tickerCounter:", tickerCounter)
 
 		if tickerCounter > 5 {
-			u := tgbotapi.NewUpdate(0)
-			u.Timeout = 60
-
 			msg := tgbotapi.NewMessage(configuration.AlertChatID, "You got hacked, son! "+configuration.AlertUser)
 			bot.Send(msg)
 		}
