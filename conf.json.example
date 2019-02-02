@@ -1,0 +1,8 @@
+{
+  "Port": 8080,
+  "Password": "lions-are-not-a-password",
+  "BotToken": "123456789:AAAAAAAAAA-_eeeeeeeeeeee",
+  "AlertUser": "@YourUser",
+  "AlertChatID": 1234567,
+  "Minutes": 10
+}
