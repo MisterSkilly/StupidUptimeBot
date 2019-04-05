@@ -8,15 +8,20 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"io/ioutil"
 )
 
 type Configuration struct {
-	Port        int
-	Password    string
-	BotToken    string
-	AlertUser   string
-	AlertChatID int64
-	Minutes     int
+	Port            int
+	Password        string
+	BotToken        string
+	AlertUser       string
+	AlertChatID     int64
+	Minutes         int
+	AdminUserID     int
+	HetznerUser     string
+	HetznerPassword string
+	HetznerIP       string
 }
 
 var bot *tgbotapi.BotAPI
@@ -47,7 +52,32 @@ func main() {
 	go func() {
 		for range ticker.C {
 			if time.Now().After(lastReceived.Add(time.Duration(configuration.Minutes)*time.Minute + 1*time.Minute)) {
-				msg := tgbotapi.NewMessage(configuration.AlertChatID, "You got hacked, son! "+configuration.AlertUser)
+				msg := tgbotapi.NewMessage(configuration.AlertChatID, "You got hacked, son! "+configuration.AlertUser+"\nFeel free to say 'restart please'.")
+				bot.Send(msg)
+			}
+		}
+	}()
+
+	go func() {
+		u := tgbotapi.NewUpdate(0)
+		u.Timeout = 60
+
+		updates, err := bot.GetUpdatesChan(u)
+		if err != nil {
+			panic(err)
+		}
+
+		for update := range updates {
+			if update.Message == nil { // ignore any non-Message Updates
+				continue
+			}
+			if update.Message.From.ID == configuration.AdminUserID && update.Message.Text == "restart please" {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Alright buddy, restarting for you!")
+				bot.Send(msg)
+
+				restartHetzner()
+
+				msg = tgbotapi.NewMessage(update.Message.Chat.ID, "Restarted.")
 				bot.Send(msg)
 			}
 		}
@@ -67,6 +97,26 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("You're not supposed to be here."))
+}
+
+func restartHetzner(){
+	rUrl := "https://robot-ws.your-server.de/reset/"+configuration.HetznerIP+"?type=hw"
+	fmt.Println("URL:>", rUrl)
+
+	req, err := http.NewRequest("POST", rUrl, nil)
+	req.SetBasicAuth(configuration.HetznerUser, configuration.HetznerPassword)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 }
 
 func loadConfig(path string) {
