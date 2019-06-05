@@ -4,24 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
-	"io/ioutil"
 )
 
 type Configuration struct {
-	Port            int
-	Password        string
-	BotToken        string
-	AlertUser       string
-	AlertChatID     int64
-	Minutes         int
-	AdminUserID     int
-	HetznerUser     string
-	HetznerPassword string
-	HetznerIP       string
+	Port                  int
+	Password              string
+	BotToken              string
+	AlertUser             string
+	AlertChatID           int64
+	Minutes               int
+	AutoRestartMultiplier int
+	AdminUserID           int
+	HetznerUser           string
+	HetznerPassword       string
+	HetznerIP             string
 }
 
 var bot *tgbotapi.BotAPI
@@ -50,10 +52,35 @@ func main() {
 	//Ticker checking every X minutes if the last update isn't too long ago (too long = X + 1 minute to avoid false-positives). If it is, then the bot alerts the user.
 	ticker := time.NewTicker(time.Duration(configuration.Minutes) * time.Minute)
 	go func() {
+		hasRestarted := false
+		sentNotifications := 0
+
 		for range ticker.C {
 			if time.Now().After(lastReceived.Add(time.Duration(configuration.Minutes)*time.Minute + 1*time.Minute)) {
-				msg := tgbotapi.NewMessage(configuration.AlertChatID, "You got hacked, son! "+configuration.AlertUser+"\nFeel free to say 'restart please'.")
+				sentNotifications++
+				left := configuration.AutoRestartMultiplier - sentNotifications
+
+				var restartMessage string
+				if left > 0 {
+					restartMessage = "Automatically restarting in " + strconv.Itoa(configuration.Minutes*left) + " minutes."
+				} else {
+					if hasRestarted {
+						restartMessage = "Server restart command was issued already"
+					} else {
+						restartMessage = "Automatically restarting server."
+						restartHetzner()
+						hasRestarted = true
+					}
+				}
+
+				msg := tgbotapi.NewMessage(
+					configuration.AlertChatID, "You got hacked, son! "+configuration.AlertUser+"\n"+
+						"Feel free to say 'restart please'.\n"+
+						restartMessage)
 				bot.Send(msg)
+			} else {
+				hasRestarted = false
+				sentNotifications = 0
 			}
 		}
 	}()
@@ -99,8 +126,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("You're not supposed to be here."))
 }
 
-func restartHetzner(){
-	rUrl := "https://robot-ws.your-server.de/reset/"+configuration.HetznerIP+"?type=hw"
+func restartHetzner() {
+	rUrl := "https://robot-ws.your-server.de/reset/" + configuration.HetznerIP + "?type=hw"
 	fmt.Println("URL:>", rUrl)
 
 	req, err := http.NewRequest("POST", rUrl, nil)

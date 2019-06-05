@@ -5,6 +5,7 @@
   "AlertUser": "@YourUser",
   "AlertChatID": 1234567,
   "Minutes": 10,
+  "AutoRestartMultiplier": 3,
   "AdminUserID": 123456789,
   "HetznerUser": "K1337",
   "HetznerPassword": "neither-are-penguins",
