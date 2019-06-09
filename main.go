@@ -49,14 +49,14 @@ func main() {
 		panic(err)
 	}
 
-	//Ticker checking every X minutes if the last update isn't too long ago (too long = X + 1 minute to avoid false-positives). If it is, then the bot alerts the user.
+	//Ticker checking every X minutes if the last update isn't too long ago (too long = 1.5* X minutes to avoid false-positives). If it is, then the bot alerts the user.
 	ticker := time.NewTicker(time.Duration(configuration.Minutes) * time.Minute)
 	go func() {
 		hasRestarted := false
 		sentNotifications := 0
 
 		for range ticker.C {
-			if time.Now().After(lastReceived.Add(time.Duration(configuration.Minutes)*time.Minute + 1*time.Minute)) {
+			if time.Now().After(lastReceived.Add(time.Duration(configuration.Minutes)*time.Minute + time.Duration(configuration.Minutes/2)*time.Minute)) {
 				sentNotifications++
 				left := configuration.AutoRestartMultiplier - sentNotifications
 
