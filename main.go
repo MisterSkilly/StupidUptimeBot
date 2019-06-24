@@ -31,6 +31,7 @@ var configuration = Configuration{}
 
 // Keeping track of last update
 var lastReceived = time.Now()
+var hasRestarted = false
 
 func main() {
 	var path string
@@ -52,7 +53,6 @@ func main() {
 	//Ticker checking every X minutes if the last update isn't too long ago (too long = 1.5* X minutes to avoid false-positives). If it is, then the bot alerts the user.
 	ticker := time.NewTicker(time.Duration(configuration.Minutes) * time.Minute)
 	go func() {
-		hasRestarted := false
 		sentNotifications := 0
 
 		for range ticker.C {
@@ -69,7 +69,6 @@ func main() {
 					} else {
 						restartMessage = "Automatically restarting server."
 						restartHetzner()
-						hasRestarted = true
 					}
 				}
 
@@ -139,6 +138,8 @@ func restartHetzner() {
 		panic(err)
 	}
 	defer resp.Body.Close()
+	
+	hasRestarted = true
 
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
